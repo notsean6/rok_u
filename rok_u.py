@@ -155,6 +155,10 @@ class RokuWrapper:
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-d", "--delay", type=int, help="Add a delay after device is selected")
+    args = ap.parse_args()
+
     devices = Roku.discover(timeout=3)
 
     if len(devices) == 0:
@@ -189,6 +193,9 @@ def main():
     roku_wrapped.print_info()
     print("[*]")
     roku_wrapped.list_apps()
+
+    if args.delay:
+        time.sleep(args.delay)
 
     roku_wrapped.power_on()
 
