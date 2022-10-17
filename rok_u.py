@@ -228,8 +228,6 @@ def main():
     print("[*]")
     roku_wrapped.list_apps()
 
-    return
-
     if args.delay:
         time.sleep(args.delay)
 
@@ -241,11 +239,6 @@ def main():
     elif args.video_title:
         roku_wrapped.play_youtube_video(args.video_title,
                                         creepy_text=args.creepy_text)
-
-    #roku_wrapped.play_youtube_video("[ASMR] Whispering 750+ Names", creepy_text=True)
-    #roku_wrapped.play_youtube_video("Monster Inc. Theme (EARRAPE)")
-    #roku_wrapped.play_youtube_video("Creepy Weeping Ghost Sound Effect", creepy_text=True)
-    #roku_wrapped.play_youtube_video("Creepy Little Girl Talking, Singing", creepy_text=True)
 
     return
 
