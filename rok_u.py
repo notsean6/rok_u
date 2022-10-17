@@ -156,37 +156,71 @@ class RokuWrapper:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("-d", "--delay", type=int, help="Add a delay after device is selected")
+    ap.add_argument("-r", "--roku-ip",
+                    type=str,
+                    help="Roku IP address to use (will discover if not present)")
+    ap.add_argument("-d", "--delay",
+                    type=int,
+                    help="Add a delay after device is selected")
+    ap.add_argument("-c",
+                    "--creepy-text",
+                    action="store_true",
+                    help="Add in creepy text before video plays")
+
+    vid_args = ap.add_mutually_exclusive_group(required=True)
+    vid_args.add_argument("--suggest-videos",
+                          action="store_true",
+                          help="List some funny youtube videos to play")
+    vid_args.add_argument("-i", "--video_index", type=int, help="Index of video from --sugest-videos")
+    vid_args.add_argument("-v", "--video_title", type=str, help="Video title to play")
+
     args = ap.parse_args()
 
-    devices = Roku.discover(timeout=3)
+    favorite_videos = ["[ASMR] Whispering 750+ Names",
+                       "Monster Inc. Theme (EARRAPE)",
+                       "Creepy Weeping Ghost Sound Effect",
+                       "Creepy Little Girl Talking, Singing"]
 
-    if len(devices) == 0:
-        print ("[*] No roku devices found")
+    if args.suggest_videos:
+        for i in range(len(favorite_videos)):
+            print("{}: {}".format(i, favorite_videos[i]))
         return
 
-    elif len(devices) == 1:
-        roku = devices[0]
-        print("[+] Found roku: {}".format(roku))
+    if args.video_index >= len(favorite_videos):
+        print("[-] Video index must be one of the videos from --sugest-videos")
+        return
+
+    if args.roku_ip:
+        roku = Roku(args.roku_ip)
     else:
-        print("Multiple roku devices found:")
-        for i in range(len(devices)):
-            print("{}: {}".format(i, devices[i]))
+        devices = Roku.discover(timeout=3)
 
-        selection = input("Please select from the listed rokus\n")
-
-        try:
-            selection = int(selection)
-
-            roku = devices[selection]
-        except ValueError as e:
-            print("[-] Selection must be an integer")
-            return
-        except Exception as e:
-            print("[-] Selection must be one of the listed devices")
+        if len(devices) == 0:
+            print ("[*] No roku devices found")
             return
 
-        print("[*] Device selected: {}".format(roku))
+        elif len(devices) == 1:
+            roku = devices[0]
+            print("[+] Found roku: {}".format(roku))
+        else:
+            print("Multiple roku devices found:")
+            for i in range(len(devices)):
+                print("{}: {}".format(i, devices[i]))
+
+            selection = input("Please select from the listed rokus\n")
+
+            try:
+                selection = int(selection)
+
+                roku = devices[selection]
+            except ValueError as e:
+                print("[-] Selection must be an integer")
+                return
+            except Exception as e:
+                print("[-] Selection must be one of the listed devices")
+                return
+
+            print("[*] Device selected: {}".format(roku))
 
     roku_wrapped = RokuWrapper(roku)
 
@@ -194,13 +228,21 @@ def main():
     print("[*]")
     roku_wrapped.list_apps()
 
+    return
+
     if args.delay:
         time.sleep(args.delay)
 
     roku_wrapped.power_on()
 
-    #roku_wrapped.play_youtube_video("Eagles chant")
-    roku_wrapped.play_youtube_video("[ASMR] Whispering 750+ Names", creepy_text=True)
+    if args.video_index:
+        roku_wrapped.play_youtube_video(favorite_videos[args.video_index],
+                                        creepy_text=args.creepy_text)
+    elif args.video_title:
+        roku_wrapped.play_youtube_video(args.video_title,
+                                        creepy_text=args.creepy_text)
+
+    #roku_wrapped.play_youtube_video("[ASMR] Whispering 750+ Names", creepy_text=True)
     #roku_wrapped.play_youtube_video("Monster Inc. Theme (EARRAPE)")
     #roku_wrapped.play_youtube_video("Creepy Weeping Ghost Sound Effect", creepy_text=True)
     #roku_wrapped.play_youtube_video("Creepy Little Girl Talking, Singing", creepy_text=True)
