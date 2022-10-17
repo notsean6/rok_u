@@ -1,93 +1,204 @@
+import time
+
+import argparse
 from roku import Roku
 
 
-def play_youtube_video(roku, title):
-        youtube = roku['YouTube']
-        if youtube is None:
-            print("[-] Youtube not found")
+class RokuWrapper:
+    def __init__(self, roku: Roku):
+        self.roku = roku
+
+        self.power_on_delay         = 5
+        self.basic_command_delay    = 0.1
+        self.app_launch_delay       = 8
+        self.search_delay           = 2
+
+
+    def __str__(self):
+        return str(self.roku)
+
+
+    def print_info(self):
+        print("[*] Roku info:")
+        print("[*]\tIp: {}".format(self.roku.host))
+        print("[*]\tDevice info: {}".format(self.roku.device_info))
+        print("[*]\tStatus:")
+        print("[*]\tPower state: {}".format(self.roku.power_state))
+
+        if self.roku.power_state:
+            print("[*]\tActive app: {}".format(self.roku.active_app))
+
+
+    def power_on(self):
+        if not self.roku.power_state:
+            self.roku.power()
+
+        time.sleep(self.power_on_delay)
+
+
+    def power_off(self):
+        if self.roku.power_state:
+            self.roku.power()
+
+
+    def select(self):
+        self.roku.select()
+        time.sleep(self.basic_command_delay)
+
+
+    def up(self):
+        self.roku.up()
+        time.sleep(self.basic_command_delay)
+
+
+    def down(self):
+        self.roku.down()
+        time.sleep(self.basic_command_delay)
+
+
+    def right(self):
+        self.roku.right()
+        time.sleep(self.basic_command_delay)
+
+
+    def left(self):
+        self.roku.left()
+        time.sleep(self.basic_command_delay)
+
+
+    def launch(self, app_name):
+        app = self.roku[app_name]
+        if app is None:
+            raise(Exception("{} not found".format(app_name)))
+
+        app.launch()
+
+        time.sleep(self.app_launch_delay)
+
+
+    def play_youtube_video(self, title, creepy_text=False):
+        try:
+            self.launch("YouTube")
+        except Exception as e:
+            print("[-] Failed to launch YouTube: {}".format(e))
             return
 
-        youtube.launch()
+        # Usually first thing on the screen is an error message
+        # due to launching YouTube from python api, select to ignore this
+        self.select()
 
-        import time
-        time.sleep(8)
+        # Takes a second to process exiting error message
+        time.sleep(1)
 
-        roku.select()
-        time.sleep(0.5)
-        roku.left()
-        time.sleep(0.5)
-        roku.up()
-        time.sleep(0.5)
-        roku.right()
-        time.sleep(0.5)
-        roku.literal(title)
+        # Go left to left dashboard
+        self.left()
+
+        # Up to search
+        self.up()
+
+        # Right into search interface
+        self.right()
+
+        # Go down and hover clear button
+        self.right()
+        self.down()
+        self.down()
+        self.down()
+        self.down()
+        self.right()
+
+        if creepy_text:
+            self.roku.literal("I'm watching you")
+
+            # Time for them to read it
+            time.sleep(2)
+            # Clear text
+            self.select()
+
+            self.roku.literal("You know...")
+
+            # Time for them to read it
+            time.sleep(1)
+            # Clear text
+            self.select()
+
+            self.roku.literal("I used to live here")
+
+            # Time for them to read it
+            time.sleep(1)
+            # Clear text
+            self.select()
+
+        # Write the title of the video into search interface
+        self.roku.literal(title)
+
+        # Sleep a little to make sure the literal is fully written into seach
+        # (there is also slight delay because YouTube tries to load some videos
+        # with from the given text
+        time.sleep(1)
+
+        # Click search button
+        self.right()
+        self.select()
+
+        # Delay as YouTube actually loads search results
         time.sleep(2)
-        time.sleep(0.1)
-        roku.right()
-        time.sleep(0.1)
-        roku.down()
-        time.sleep(0.1)
-        roku.down()
-        time.sleep(0.1)
-        roku.down()
-        time.sleep(0.1)
-        roku.down()
-        time.sleep(0.1)
-        roku.right()
-        time.sleep(0.1)
-        roku.right()
-        time.sleep(0.1)
-        roku.select()
-        time.sleep(2)
-        roku.select()
+
+        # Select first search result
+        self.select()
+
+
+    def list_apps(self):
+        print("[*] Available apps:")
+        for app in self.roku.apps:
+            print("[*]\t{}".format(app.name))
 
 
 def main():
-        devices = Roku.discover(timeout=3)
+    devices = Roku.discover(timeout=3)
 
-        if len(devices) == 0:
-            print ("[*] No roku devices found")
+    if len(devices) == 0:
+        print ("[*] No roku devices found")
+        return
+
+    elif len(devices) == 1:
+        roku = devices[0]
+        print("[+] Found roku: {}".format(roku))
+    else:
+        print("Multiple roku devices found:")
+        for i in range(len(devices)):
+            print("{}: {}".format(i, devices[i]))
+
+        selection = input("Please select from the listed rokus\n")
+
+        try:
+            selection = int(selection)
+
+            roku = devices[selection]
+        except ValueError as e:
+            print("[-] Selection must be an integer")
+            return
+        except Exception as e:
+            print("[-] Selection must be one of the listed devices")
             return
 
-        elif len(devices) == 1:
-            roku = devices[0]
-            print("[+] Found roku: {}".format(roku))
-        else:
-            print("Multiple roku devices found:")
-            for i in range(len(devices)):
-                print("{}: {}".format(i, devices[i]))
+        print("[*] Device selected: {}".format(roku))
 
-            selection = input("Please select from the listed rokus\n")
+    roku_wrapped = RokuWrapper(roku)
 
-            try:
-                selection = int(selection)
+    roku_wrapped.print_info()
+    print("[*]")
+    roku_wrapped.list_apps()
 
-                roku = devices[selection]
-            except ValueError as e:
-                print("[-] Selection must be an integer")
-                return
-            except Exception as e:
-                print("[-] Selection must be one of the listed devices")
-                return
+    roku_wrapped.power_on()
 
-            print("[*] Device selected: {}".format(roku))
+    #roku_wrapped.play_youtube_video("Eagles chant")
+    roku_wrapped.play_youtube_video("[ASMR] Whispering 750+ Names", creepy_text=True)
+    #roku_wrapped.play_youtube_video("Monster Inc. Theme (EARRAPE)")
+    #roku_wrapped.play_youtube_video("Creepy Weeping Ghost Sound Effect", creepy_text=True)
+    #roku_wrapped.play_youtube_video("Creepy Little Girl Talking, Singing", creepy_text=True)
 
-        print("[*] Status:")
-        print("[*] Power state: {}".format(roku.power_state))
-
-        if roku.power_state:
-            print("[*] Active app: {}".format(roku.active_app))
-
-        print("[*] Available apps:")
-        for app in roku.apps:
-            print(app.name)
-
-        print(dir(roku))
-
-        #play_youtube_video(roku, "[ASMR] Whispering 750+ Names")
-        play_youtube_video(roku, "Monster Inc. Theme (EARRAPE)")
-
-        return
+    return
 
 
 if __name__ == "__main__":
