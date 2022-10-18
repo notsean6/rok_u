@@ -13,6 +13,8 @@ class RokuWrapper:
         self.app_launch_delay       = 8
         self.search_delay           = 2
 
+        self.slow_text_delay        = 0.1
+
 
     def __str__(self):
         return str(self.roku)
@@ -108,7 +110,7 @@ class RokuWrapper:
         self.right()
 
         if creepy_text:
-            self.roku.literal("I'm watching you")
+            self.roku.literal("I've been watching you")
 
             # Time for them to read it
             time.sleep(2)
@@ -154,6 +156,68 @@ class RokuWrapper:
             print("[*]\t{}".format(app.name))
 
 
+    def creepy_roku_text(self):
+        '''
+            Writes creept text to roku search screen
+
+            Most reliable creepy text, api can clear and write quickly
+        '''
+
+        # Bring up search screen
+        self.roku.search()
+
+        # Weird computer stuff
+        for i in range(4):
+            self.roku.literal("0")
+            time.sleep(self.slow_text_delay)
+            self.roku.literal("1")
+            time.sleep(self.slow_text_delay)
+        self.roku.literal("~")
+        time.sleep(self.slow_text_delay)
+
+        self.roku.literal("GET OUT")
+        time.sleep(self.slow_text_delay)
+
+        self.roku.literal("~")
+        time.sleep(self.slow_text_delay)
+        for i in range(4):
+            # Weird computer stuff
+            self.roku.literal("1")
+            time.sleep(self.slow_text_delay)
+            self.roku.literal("0")
+            time.sleep(self.slow_text_delay)
+
+        # Give them time to read it
+        time.sleep(4)
+
+        # Clear text (and bring them back to search if they exited)
+        self.search()
+
+        self.roku.literal("You are not alone")
+
+        # Time to read it
+        time.sleep(2)
+
+
+    def play_hosted_video(self, video_url):
+        '''
+            Uses play_on_roku app to play hosted video
+            # WARNING - Ensure that video url is correct or this will not work
+        '''
+
+        # XXX - remove me after testing
+        #video_url = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+
+        request_params = {
+            "t": "v",
+            "u": video_url
+        }
+
+        import urllib
+        encoded = urllib.parse.urlencode(request_params)
+        response = self.roku._post(f"/input/15985?{encoded}", params=request_params)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("-r", "--roku-ip",
@@ -171,8 +235,18 @@ def main():
     vid_args.add_argument("--suggest-videos",
                           action="store_true",
                           help="List some funny youtube videos to play")
-    vid_args.add_argument("-i", "--video_index", type=int, help="Index of video from --sugest-videos")
-    vid_args.add_argument("-v", "--video_title", type=str, help="Video title to play")
+    vid_args.add_argument("-i",
+                          "--video_index",
+                          type=int,
+                          help="Index of video from --sugest-videos")
+    vid_args.add_argument("-y",
+                          "--youtube_video_title",
+                          type=str,
+                          help="Video title to play")
+    vid_args.add_argument("-h"
+                          "--hosted-video-url",
+                          type=str,
+                          help="Hosted video url to play (supports .mov and .mp4)")
 
     args = ap.parse_args()
 
@@ -233,7 +307,20 @@ def main():
 
     roku_wrapped.power_on()
 
-    if args.video_index:
+    # First round of creepy text via roku search, this one is reliable
+    # Hopefully after this they will be curious and see the rest through
+    # to the end
+    if args.creepy_text:
+        roku_wrapped.creepy_roku_text()
+
+    # Eh, just in case they turned it off
+    # XXX - add some more of these?
+    roku_wrapped.power_on()
+
+    if args.hosted_video_url:
+        roku_wrapped.play_hosted_video(args.hosted_video_url)
+
+    elif args.video_index:
         roku_wrapped.play_youtube_video(favorite_videos[args.video_index],
                                         creepy_text=args.creepy_text)
     elif args.video_title:
