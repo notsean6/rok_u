@@ -85,6 +85,8 @@ class RokuWrapper:
             print("[-] Failed to launch YouTube: {}".format(e))
             return
 
+        time.sleep(7)
+
         # Usually first thing on the screen is an error message
         # due to launching YouTube from python api, select to ignore this
         self.select()
@@ -166,32 +168,19 @@ class RokuWrapper:
         # Bring up search screen
         self.roku.search()
 
-        # Weird computer stuff
-        for i in range(4):
-            self.roku.literal("0")
-            time.sleep(self.slow_text_delay)
-            self.roku.literal("1")
-            time.sleep(self.slow_text_delay)
-        self.roku.literal("~")
         time.sleep(self.slow_text_delay)
 
-        self.roku.literal("GET OUT")
+        self.roku.literal("help me.. ")
+
         time.sleep(self.slow_text_delay)
 
-        self.roku.literal("~")
-        time.sleep(self.slow_text_delay)
-        for i in range(4):
-            # Weird computer stuff
-            self.roku.literal("1")
-            time.sleep(self.slow_text_delay)
-            self.roku.literal("0")
-            time.sleep(self.slow_text_delay)
+        self.roku.literal("please")
 
         # Give them time to read it
-        time.sleep(4)
+        time.sleep(3)
 
         # Clear text (and bring them back to search if they exited)
-        self.search()
+        self.roku.search()
 
         self.roku.literal("You are not alone")
 
@@ -243,7 +232,7 @@ def main():
                           "--youtube_video_title",
                           type=str,
                           help="Video title to play")
-    vid_args.add_argument("-h"
+    vid_args.add_argument("-u",
                           "--hosted-video-url",
                           type=str,
                           help="Hosted video url to play (supports .mov and .mp4)")
@@ -319,7 +308,6 @@ def main():
 
     if args.hosted_video_url:
         roku_wrapped.play_hosted_video(args.hosted_video_url)
-
     elif args.video_index:
         roku_wrapped.play_youtube_video(favorite_videos[args.video_index],
                                         creepy_text=args.creepy_text)
