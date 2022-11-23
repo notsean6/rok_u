@@ -229,7 +229,7 @@ def main():
                           type=int,
                           help="Index of video from --sugest-videos")
     vid_args.add_argument("-y",
-                          "--youtube_video_title",
+                          "--youtube-video-title",
                           type=str,
                           help="Video title to play")
     vid_args.add_argument("-u",
@@ -311,7 +311,7 @@ def main():
     elif args.video_index:
         roku_wrapped.play_youtube_video(favorite_videos[args.video_index],
                                         creepy_text=args.creepy_text)
-    elif args.video_title:
+    elif args.youtube_video_title:
         roku_wrapped.play_youtube_video(args.video_title,
                                         creepy_text=args.creepy_text)
 
